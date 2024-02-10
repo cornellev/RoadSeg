@@ -1,0 +1,4 @@
+<launch>
+   <node name="RSeg" pkg="road_seg" type="road_seg.py"
+output="screen"/>
+</launch>
