@@ -6,6 +6,7 @@ import rospy
 from std_msgs.msg import Bool
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge as bridge
+import time
 
 
 FILEPATH = "enet-model.net" #fill with Local filepath to model parameters
@@ -31,20 +32,25 @@ for (i, (className, color)) in enumerate(zip(classes, colors)):
 
 def seg_callback(data):
     image = bridge.imgmsg_to_cv2(data, desired_encoding = 'passthrough')
-    height,width = image.size
     image = imutils.resize(image, width=500)
     blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (1024, 512), 0,
 	swapRB=True, crop=False)
     net.setInput(blob)
+    start = time.time()
     output = net.forward()
-    (_, height, width) = output.shape[1:4]
+    end = time.time()
+    print("[INFO] inference took {:.4f} seconds".format(end - start))
+    
     classMap = np.argmax(output[0], axis=0)
-    
+    mask = colors[classMap]
+    mask = cv2.resize(mask, (image.shape[1], image.shape[0]),
+	interpolation=cv2.INTER_NEAREST)
+    classMap = cv2.resize(classMap, (image.shape[1], image.shape[0]),
+	interpolation=cv2.INTER_NEAREST)
+    output = ((0.4 * image) + (0.6 * mask)).astype("uint8")
     #print would go below here
-    
-
-    
-    return output
+    cv2.imshow(output)
+    pub.publish(True)
 
 if __name__ == '__main__':
     while 1:
